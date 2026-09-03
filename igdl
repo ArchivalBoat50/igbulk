@@ -1,0 +1,22 @@
+#!/bin/sh
+# Launcher for the Instagram bulk downloader (see README.md).
+# install.sh symlinks this into ~/.local/bin/igdl, so resolve the real location
+# of this script before pointing Python at the package.
+set -e
+
+target="$0"
+while [ -L "$target" ]; do
+  link=$(readlink "$target")
+  case "$link" in
+    /*) target="$link" ;;
+    *)  target="$(dirname "$target")/$link" ;;
+  esac
+done
+root="$(cd "$(dirname "$target")" && pwd)"
+
+# Unbuffered so progress and the --serve banner reach redirected stdout (a log
+# file under launchd) instead of sitting in a block buffer until the process
+# exits — which it never does under --serve, and never cleanly when killed.
+PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" \
+PYTHONUNBUFFERED=1 \
+  exec "${IGBULK_PYTHON:-python3}" -m igbulk.cli "$@"

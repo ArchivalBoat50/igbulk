@@ -1,0 +1,23 @@
+#!/bin/sh
+# MCP stdio server launcher (see README.md).
+#
+# Agents start MCP servers from an arbitrary working directory, so `python3 -m
+# igbulk.mcp` alone fails with ModuleNotFoundError. Resolve this script's real
+# location — even through the ~/.local/bin symlink — and put the package on
+# PYTHONPATH before handing over to Python.
+set -e
+
+target="$0"
+while [ -L "$target" ]; do
+  link=$(readlink "$target")
+  case "$link" in
+    /*) target="$link" ;;
+    *)  target="$(dirname "$target")/$link" ;;
+  esac
+done
+root="$(cd "$(dirname "$target")" && pwd)"
+
+# stdout is the JSON-RPC channel and must carry nothing else.
+PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" \
+PYTHONUNBUFFERED=1 \
+  exec "${IGBULK_PYTHON:-python3}" -m igbulk.mcp "$@"
